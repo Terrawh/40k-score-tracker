@@ -119,13 +119,14 @@
   .meta{ display:flex; justify-content: space-between; align-items:center; color: var(--text-dim); font-size: 0.8rem; margin: 0 4px 16px; }
 
   .actions{ display:flex; gap: 10px; }
-  button.action{
+  .action{
     flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
     background: var(--panel); color: var(--text); font-weight: 700; font-size: 0.9rem;
     cursor:pointer; letter-spacing: 0.5px; text-transform: uppercase;
+    display:flex; align-items:center; justify-content:center; text-decoration:none;
   }
-  button.action.danger{ color: var(--p1); border-color: var(--p1-dim); }
-  button.action:active{ transform: scale(0.98); }
+  .action.danger{ color: var(--p1); border-color: var(--p1-dim); }
+  .action:active{ transform: scale(0.98); }
 
   .winner-banner{
     text-align:center; padding: 12px; margin-bottom: 16px; border-radius: var(--radius);
@@ -178,6 +179,7 @@
     <button class="action" id="nextBtn">Next Round &rarr;</button>
   </div>
   <div class="actions" style="margin-top:10px;">
+    <a class="action" id="historyBtn" href="history.html">Game History</a>
     <button class="action danger" id="resetBtn">New Game</button>
   </div>
 
@@ -208,13 +210,19 @@
     ]
   };
 
+  function makeGameId(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
   var state = {
     scores: {
       p1: { primary: new Array(ROUNDS).fill(0), secondary: new Array(ROUNDS).fill(0) },
       p2: { primary: new Array(ROUNDS).fill(0), secondary: new Array(ROUNDS).fill(0) }
     },
     activeRound: 0,
-    gameOver: false
+    gameOver: false,
+    gameId: makeGameId(),
+    recorded: false
   };
 
   var roundsContainer = document.getElementById('roundsContainer');
@@ -226,6 +234,8 @@
   var winnerBanner = document.getElementById('winnerBanner');
 
   var STORAGE_KEY = '40k-scoreboard-v1';
+  var HISTORY_KEY = '40k-game-history-v1';
+  var HISTORY_LIMIT = 50;
 
   function saveState(){
     try{
@@ -233,6 +243,8 @@
         scores: state.scores,
         activeRound: state.activeRound,
         gameOver: state.gameOver,
+        gameId: state.gameId,
+        recorded: state.recorded,
         name1: document.getElementById('name1').value,
         name2: document.getElementById('name2').value,
         army1: document.getElementById('army1').value,
@@ -240,6 +252,47 @@
         armyOther1: document.getElementById('armyOther1').value,
         armyOther2: document.getElementById('armyOther2').value
       }));
+    } catch(e){}
+  }
+
+  function armyDisplay(n){
+    var select = document.getElementById('army' + n);
+    var otherInput = document.getElementById('armyOther' + n);
+    if (select.value === 'other') return otherInput.value.trim() || 'Other / Homebrew';
+    return select.value || '';
+  }
+
+  function recordGameToHistory(){
+    if (state.recorded) return;
+    var rounds = [];
+    for (var i = 0; i < ROUNDS; i++){
+      rounds.push({
+        p1: { primary: state.scores.p1.primary[i], secondary: state.scores.p1.secondary[i] },
+        p2: { primary: state.scores.p2.primary[i], secondary: state.scores.p2.secondary[i] }
+      });
+    }
+    var t1 = grandTotal('p1');
+    var t2 = grandTotal('p2');
+    var entry = {
+      id: state.gameId,
+      date: new Date().toISOString(),
+      name1: document.getElementById('name1').value || 'Player 1',
+      name2: document.getElementById('name2').value || 'Player 2',
+      army1: armyDisplay('1'),
+      army2: armyDisplay('2'),
+      rounds: rounds,
+      total1: t1,
+      total2: t2,
+      winner: t1 === t2 ? 'draw' : (t1 > t2 ? 'p1' : 'p2')
+    };
+    try{
+      var raw = localStorage.getItem(HISTORY_KEY);
+      var history = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(history)) history = [];
+      history.push(entry);
+      if (history.length > HISTORY_LIMIT) history = history.slice(history.length - HISTORY_LIMIT);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      state.recorded = true;
     } catch(e){}
   }
 
@@ -275,6 +328,8 @@
       state.activeRound = clamp(saved.activeRound);
       if (state.activeRound >= ROUNDS) state.activeRound = ROUNDS - 1;
       state.gameOver = !!saved.gameOver;
+      if (saved.gameId) state.gameId = saved.gameId;
+      state.recorded = !!saved.recorded;
 
       if (saved.name1) document.getElementById('name1').value = saved.name1;
       if (saved.name2) document.getElementById('name2').value = saved.name2;
@@ -516,6 +571,7 @@
     } else {
       state.gameOver = true;
       render();
+      recordGameToHistory();
     }
     saveState();
   });
@@ -529,6 +585,8 @@
     };
     state.activeRound = 0;
     state.gameOver = false;
+    state.gameId = makeGameId();
+    state.recorded = false;
     render();
     saveState();
   });
