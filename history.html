@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Game History &middot; 40K Score Tracker</title>
+<script src="factions.js"></script>
 <style>
   :root{
     --bg: #0f1113;
@@ -66,6 +67,10 @@
   .game-player .parmy{ font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; }
   .game-player.winner .pname{ color: var(--gold); }
   .game-player.winner .pname::after{ content: ' \1F451'; font-size: 0.8em; }
+  .game-player .army-icon{ width: 22px; height: 22px; margin: 6px auto 0; color: var(--text-dim); }
+  .game-player .army-icon svg{ width:100%; height:100%; display:block; }
+  .game-player.p1 .army-icon{ color: var(--p1); }
+  .game-player.p2 .army-icon{ color: var(--p2); }
   .game-player.p1 .ptotal{ color: var(--p1); }
   .game-player.p2 .ptotal{ color: var(--p2); }
   .game-player .ptotal{ font-size: 1.8rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height:1.1; margin-top:2px; }
@@ -152,6 +157,7 @@
     p1.innerHTML =
       '<div class="pname">' + escapeHtml(entry.name1) + '</div>' +
       (entry.army1 ? '<div class="parmy">' + escapeHtml(entry.army1) + '</div>' : '') +
+      (entry.army1 ? '<div class="army-icon">' + factionIconSVG(entry.army1) + '</div>' : '') +
       '<div class="ptotal">' + entry.total1 + '</div>';
 
     var vs = document.createElement('div');
@@ -163,6 +169,7 @@
     p2.innerHTML =
       '<div class="pname">' + escapeHtml(entry.name2) + '</div>' +
       (entry.army2 ? '<div class="parmy">' + escapeHtml(entry.army2) + '</div>' : '') +
+      (entry.army2 ? '<div class="army-icon">' + factionIconSVG(entry.army2) + '</div>' : '') +
       '<div class="ptotal">' + entry.total2 + '</div>';
 
     score.appendChild(p1);

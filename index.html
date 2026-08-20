@@ -62,6 +62,12 @@
   .score-card select.army:focus,
   .score-card input.army-other:focus{ outline: 1px solid var(--gold); color: var(--text); }
   .score-card input.army-other{ display:none; text-align: center; }
+  .score-card .army-icon{
+    width: 26px; height: 26px; margin: 8px auto 0; color: var(--text-dim);
+  }
+  .score-card .army-icon svg{ width:100%; height:100%; display:block; }
+  .score-card.p1 .army-icon{ color: var(--p1); }
+  .score-card.p2 .army-icon{ color: var(--p2); }
   .score-card .total{
     font-size: 2.6rem; font-weight: 800; line-height: 1.1; margin: 6px 0 2px;
     font-variant-numeric: tabular-nums;
@@ -154,6 +160,7 @@
       <input class="name" id="name1" value="Player 1" maxlength="20">
       <select class="army" id="army1"></select>
       <input class="army-other" id="armyOther1" type="text" placeholder="Enter army name" maxlength="30">
+      <div class="army-icon" id="armyIcon1"></div>
       <div class="total" id="total1">0</div>
       <div class="cap">of 90 VP max</div>
     </div>
@@ -162,6 +169,7 @@
       <input class="name" id="name2" value="Player 2" maxlength="20">
       <select class="army" id="army2"></select>
       <input class="army-other" id="armyOther2" type="text" placeholder="Enter army name" maxlength="30">
+      <div class="army-icon" id="armyIcon2"></div>
       <div class="total" id="total2">0</div>
       <div class="cap">of 90 VP max</div>
     </div>
@@ -186,29 +194,14 @@
   <footer>Primary max 15 VP/round &middot; Secondary max 15 VP/round &middot; 90 VP/game (11th Ed. guideline, not enforced)</footer>
 </div>
 
+<script src="factions.js"></script>
 <script>
 (function(){
   var ROUNDS = 5;
   var CAT_CAP = 15;    // per player, per round, per category (primary or secondary) — soft guideline
   var GAME_CAP = 90;   // per player, per game — soft guideline
 
-  // 11th edition factions, grouped by grand alliance. If a codex is missing or renamed,
-  // "Other / Homebrew" lets a player type any army name instead.
-  var FACTIONS = {
-    'Imperium': [
-      'Adepta Sororitas', 'Adeptus Custodes', 'Adeptus Mechanicus', 'Astra Militarum',
-      'Imperial Knights', 'Space Marines', 'Black Templars', 'Dark Angels', 'Deathwatch',
-      'Grey Knights', 'Space Wolves'
-    ],
-    'Chaos': [
-      'Chaos Space Marines', 'Chaos Daemons', 'Chaos Knights', 'Death Guard',
-      "Emperor's Children", 'Thousand Sons', 'World Eaters'
-    ],
-    'Xenos': [
-      'Aeldari', 'Drukhari', 'Genestealer Cults', 'Leagues of Votann', 'Necrons',
-      'Orks', "T'au Empire", 'Tyranids'
-    ]
-  };
+  // FACTIONS and factionIconSVG() are defined in factions.js
 
   function makeGameId(){
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -305,6 +298,13 @@
       otherInput.style.display = 'block';
       otherInput.value = other || '';
     }
+    updateArmyIcon(n);
+  }
+
+  function updateArmyIcon(n){
+    var select = document.getElementById('army' + n);
+    var iconEl = document.getElementById('armyIcon' + n);
+    iconEl.innerHTML = select.value ? factionIconSVG(select.value === 'other' ? '_other' : select.value) : '';
   }
 
   function loadState(){
@@ -370,6 +370,7 @@
   }
 
   function setupArmyPicker(select, otherInput){
+    var n = select.id.replace('army', '');
     buildArmyDropdown(select);
     select.addEventListener('change', function(){
       if (select.value === 'other'){
@@ -379,6 +380,7 @@
         otherInput.style.display = 'none';
         otherInput.value = '';
       }
+      updateArmyIcon(n);
       saveState();
     });
     otherInput.addEventListener('input', saveState);
